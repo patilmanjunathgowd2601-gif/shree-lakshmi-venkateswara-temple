@@ -14,7 +14,7 @@ RUN npm run build
 # k8s/frontend/deployment.yaml). nginx normally needs root to bind port 80
 # and to write its cache/pid files, so we listen on 8080 instead (see
 # nginx.conf) and pre-create/chown everything nginx needs to write.
-FROM nginx:1.27-alpine
+FROM nginx:1.31-alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
