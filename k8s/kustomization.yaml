@@ -2,29 +2,29 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - namespace.yaml
-  - configmap.yaml
-  - networkpolicy-default-deny.yaml
-  - mongo/serviceaccount.yaml
-  - mongo/pvc.yaml
-  - mongo/deployment.yaml
-  - mongo/service.yaml
-  - mongo/networkpolicy.yaml
-  - backend/serviceaccount.yaml
-  - backend/deployment.yaml
-  - backend/service.yaml
-  - backend/servicemonitor.yaml
-  - backend/networkpolicy.yaml
-  - booking-service/serviceaccount.yaml
-  - booking-service/deployment.yaml
-  - booking-service/service.yaml
-  - booking-service/servicemonitor.yaml
-  - booking-service/networkpolicy.yaml
-  - frontend/serviceaccount.yaml
-  - frontend/deployment.yaml
-  - frontend/service.yaml
-  - frontend/networkpolicy.yaml
-  - ingress.yaml
+- namespace.yaml
+- configmap.yaml
+- networkpolicy-default-deny.yaml
+- mongo/serviceaccount.yaml
+- mongo/pvc.yaml
+- mongo/deployment.yaml
+- mongo/service.yaml
+- mongo/networkpolicy.yaml
+- backend/serviceaccount.yaml
+- backend/deployment.yaml
+- backend/service.yaml
+- backend/servicemonitor.yaml
+- backend/networkpolicy.yaml
+- booking-service/serviceaccount.yaml
+- booking-service/deployment.yaml
+- booking-service/service.yaml
+- booking-service/servicemonitor.yaml
+- booking-service/networkpolicy.yaml
+- frontend/serviceaccount.yaml
+- frontend/deployment.yaml
+- frontend/service.yaml
+- frontend/networkpolicy.yaml
+- ingress.yaml
 
 # NOTE: k8s/secret.example.yaml is intentionally NOT listed here - secrets are
 # created directly in the cluster instead of committed to git. See that
@@ -35,12 +35,12 @@ resources:
 # to your own GitHub account (or let the "Update image tags" CI job in
 # .github/workflows/cd.yml do it automatically on every push to main).
 images:
-  - name: temple-backend
-    newName: ghcr.io/CHANGEME/CHANGEME-backend
-    newTag: latest
-  - name: temple-booking-service
-    newName: ghcr.io/CHANGEME/CHANGEME-booking-service
-    newTag: latest
-  - name: temple-frontend
-    newName: ghcr.io/CHANGEME/CHANGEME-frontend
-    newTag: latest
+- name: temple-backend
+  newName: ghcr.io/patilmanjunathgowd2601-gif/shree-lakshmi-venkateswara-temple-backend
+  newTag: 6b55cd4392144262d22a025ea87b04f3f499045e
+- name: temple-booking-service
+  newName: ghcr.io/patilmanjunathgowd2601-gif/shree-lakshmi-venkateswara-temple-booking-service
+  newTag: 6b55cd4392144262d22a025ea87b04f3f499045e
+- name: temple-frontend
+  newName: ghcr.io/patilmanjunathgowd2601-gif/shree-lakshmi-venkateswara-temple-frontend
+  newTag: 6b55cd4392144262d22a025ea87b04f3f499045e
