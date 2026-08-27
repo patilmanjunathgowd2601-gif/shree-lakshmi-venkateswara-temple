@@ -55,17 +55,25 @@ jobs:
     runs-on: ubuntu-latest
     # Only runs once you've added these repo secrets (Settings -> Secrets and
     # variables -> Actions). Until then this job is a harmless no-op.
+    #
+    # Note: the `secrets` context can't be referenced inside `if:` conditions
+    # at all (job or step level) - it's only available in `run:`/`env:`/etc.
+    # So each secret is routed through this job-level env: first, and the
+    # if: conditions below check `env.*` instead of `secrets.*` directly.
+    env:
+      RENDER_BACKEND_DEPLOY_HOOK: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}
+      RENDER_FRONTEND_DEPLOY_HOOK: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}
     steps:
       - name: Deploy backend (Render)
-        if: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK != '' }}
-        run: curl -fsS -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}"
+        if: ${{ env.RENDER_BACKEND_DEPLOY_HOOK != '' }}
+        run: curl -fsS -X POST "${{ env.RENDER_BACKEND_DEPLOY_HOOK }}"
 
       - name: Deploy frontend (Render)
-        if: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK != '' }}
-        run: curl -fsS -X POST "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}"
+        if: ${{ env.RENDER_FRONTEND_DEPLOY_HOOK != '' }}
+        run: curl -fsS -X POST "${{ env.RENDER_FRONTEND_DEPLOY_HOOK }}"
 
       - name: No deploy hooks configured
-        if: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK == '' && secrets.RENDER_FRONTEND_DEPLOY_HOOK == '' }}
+        if: ${{ env.RENDER_BACKEND_DEPLOY_HOOK == '' && env.RENDER_FRONTEND_DEPLOY_HOOK == '' }}
         run: echo "Images were pushed to GHCR, but no deploy hook secrets are set yet. See README.md."
 
   update-gitops-manifests:
