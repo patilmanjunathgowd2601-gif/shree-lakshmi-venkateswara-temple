@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: booking-service
+  namespace: temple
+  labels:
+    release: prometheus
+spec:
+  namespaceSelector:
+    matchNames:
+      - temple
+  selector:
+    matchLabels:
+      app: booking-service
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

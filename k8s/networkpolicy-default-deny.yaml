@@ -1,0 +1,14 @@
+# Baseline "deny by default" - every other NetworkPolicy in this directory
+# is an explicit exception to this. Only affects ingress (inbound) traffic;
+# egress is left open so backend/frontend can still reach Razorpay's API and
+# cluster DNS without extra rules (a stricter egress policy is a good next
+# exercise - see the README's roadmap).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: temple
+spec:
+  podSelector: {} # selects every pod in the namespace
+  policyTypes:
+    - Ingress

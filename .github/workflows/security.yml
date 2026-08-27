@@ -1,0 +1,184 @@
+name: Security
+
+# All jobs here are intentionally REPORT-ONLY: they surface findings in the
+# GitHub Security tab and job logs, but never fail the build. That's a
+# deliberate choice for this project (see README's DevSecOps section) - flip
+# a job's `continue-on-error`/`|| true` off if you want it to gate merges
+# instead.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Catches newly-disclosed CVEs against unchanged code/dependencies.
+    - cron: "0 6 * * 1" # every Monday 06:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  secret-scan:
+    name: Secret scanning (gitleaks)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # scan full git history, not just the latest commit
+
+      - name: Run gitleaks
+        id: gitleaks
+        continue-on-error: true
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest detect \
+            --source /repo \
+            --report-format sarif \
+            --report-path /repo/gitleaks-results.sarif \
+            --exit-code 1 -v
+
+      - name: Upload results to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: gitleaks-results.sarif
+          category: gitleaks
+
+  dependency-audit:
+    name: Dependency vulnerability audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: npm audit - backend
+        working-directory: backend
+        run: npm audit --audit-level=moderate || true
+
+      - name: npm audit - frontend
+        working-directory: frontend
+        run: npm audit --audit-level=moderate || true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: pip-audit - booking-service
+        working-directory: booking-service
+        run: |
+          pip install --quiet pip-audit
+          pip-audit -r requirements.txt || true
+
+  container-scan:
+    name: Container image scan (Trivy)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      matrix:
+        service: [backend, booking-service, frontend]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build image (local only - not pushed to any registry)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.service }}
+          push: false
+          load: true
+          tags: local/${{ matrix.service }}:scan
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: local/${{ matrix.service }}:scan
+          format: sarif
+          output: trivy-${{ matrix.service }}.sarif
+          severity: CRITICAL,HIGH
+          exit-code: "0" # report-only - see the note at the top of this file
+
+      - name: Upload results to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-${{ matrix.service }}.sarif
+          category: trivy-${{ matrix.service }}
+
+  iac-scan:
+    name: Infrastructure-as-code scan (Checkov)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install checkov
+        run: pip install --quiet checkov
+
+      - name: Scan Terraform
+        continue-on-error: true
+        run: |
+          checkov --directory terraform --framework terraform --soft-fail \
+            --output sarif --output-file-path .
+          mv results_sarif.sarif checkov-terraform.sarif
+
+      - name: Scan Kubernetes manifests
+        continue-on-error: true
+        run: |
+          checkov --directory k8s --framework kubernetes --soft-fail \
+            --output sarif --output-file-path .
+          mv results_sarif.sarif checkov-k8s.sarif
+
+      - name: Upload Terraform results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: checkov-terraform.sarif
+          category: checkov-terraform
+
+      - name: Upload Kubernetes results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: checkov-k8s.sarif
+          category: checkov-k8s
+
+  dockerfile-lint:
+    name: Dockerfile lint (hadolint)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      matrix:
+        service: [backend, booking-service, frontend]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run hadolint
+        continue-on-error: true
+        run: |
+          docker run --rm -i hadolint/hadolint hadolint --format sarif - \
+            < ${{ matrix.service }}/Dockerfile > hadolint-${{ matrix.service }}.sarif
+
+      - name: Upload results to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: hadolint-${{ matrix.service }}.sarif
+          category: hadolint-${{ matrix.service }}

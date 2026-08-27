@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: temple-config
+  namespace: temple
+data:
+  NODE_ENV: "production"
+  # Set this to the Ingress host you configure below (see ingress.yaml) once
+  # you have one, e.g. "http://temple.local". "*" is fine for local learning.
+  CORS_ORIGIN: "*"
+  JWT_EXPIRES_IN: "7d"
+  BACKEND_MONGO_URI: "mongodb://mongo:27017/temple"
+  BOOKING_MONGO_URI: "mongodb://mongo:27017/temple_bookings"

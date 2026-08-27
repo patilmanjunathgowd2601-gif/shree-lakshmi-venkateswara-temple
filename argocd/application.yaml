@@ -1,0 +1,45 @@
+# Applied once, manually, after terraform/ has installed ArgoCD:
+#   kubectl apply -f argocd/application.yaml
+#
+# From then on ArgoCD watches this repo's k8s/ directory (a Kustomize base)
+# and automatically applies (and, with selfHeal, re-applies if someone
+# changes the cluster out-of-band) whatever it finds there. The CD workflow
+# in .github/workflows/cd.yml pushes new image tags into k8s/kustomization.yaml
+# after every build, which is what actually triggers a new rollout - ArgoCD
+# is just the thing that notices and applies that git change.
+#
+# Replace CHANGEME/CHANGEME with your own GitHub username/org and repo name
+# once you've pushed this project to your own repository.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: temple
+  namespace: argocd
+  finalizers:
+    # Ensures `kubectl delete application temple` also cleans up everything
+    # it deployed, instead of orphaning it in the cluster.
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/CHANGEME/CHANGEME.git
+    targetRevision: main
+    path: k8s
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: temple
+
+  syncPolicy:
+    automated:
+      prune: true # remove resources that are deleted from k8s/ in git
+      selfHeal: true # revert manual `kubectl edit` drift back to match git
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

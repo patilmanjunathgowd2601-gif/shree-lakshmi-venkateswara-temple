@@ -1,0 +1,78 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: temple-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    container_name: temple-backend
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 5000
+      MONGO_URI: mongodb://mongo:27017/temple
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me}
+      JWT_EXPIRES_IN: 7d
+      CORS_ORIGIN: http://localhost:5173,http://localhost:8080
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@srilakshmivenkateswara.org}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-me-immediately}
+    ports:
+      - "5000:5000"
+
+  booking-service:
+    build:
+      context: ./booking-service
+    container_name: temple-booking-service
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      PORT: 8000
+      MONGO_URI: mongodb://mongo:27017/temple_bookings
+      # Must match the backend's JWT_SECRET above - one admin login works
+      # across both services.
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me}
+      CORS_ORIGIN: http://localhost:5173,http://localhost:8080
+    ports:
+      # Host 8001 -> container 8000. Only the host side is remapped here -
+      # container-to-container traffic (e.g. the frontend's nginx proxying
+      # /booking-api/ to booking-service:8000) is unaffected. Pick whatever
+      # free host port suits your machine; 8000 is a common one for other
+      # projects to already be squatting on.
+      - "8001:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: temple-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - booking-service
+    ports:
+      # Host 8090 -> container 8080. The container listens on 8080 (not 80)
+      # because it runs nginx as a non-root user, which can't bind ports
+      # below 1024 - see frontend/Dockerfile. The host side is 8090 rather
+      # than 8080 only because something else on this machine already used
+      # 8080 - pick whatever free host port suits your machine.
+      - "8090:8080"
+
+volumes:
+  mongo-data:

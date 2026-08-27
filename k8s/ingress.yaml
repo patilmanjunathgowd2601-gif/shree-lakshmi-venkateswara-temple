@@ -1,0 +1,23 @@
+# Requires the minikube ingress addon: `minikube addons enable ingress`
+# Add "<minikube ip> temple.local" to your hosts file, then visit
+# http://temple.local in a browser. See README's Kubernetes section.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: temple-ingress
+  namespace: temple
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "5m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: temple.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80

@@ -1,0 +1,110 @@
+name: CD
+
+# Builds and pushes Docker images on every push to main (after CI's checks run
+# as part of the same push), then optionally pings your hosting provider's
+# deploy hook so it pulls the new image. See README.md "Deployment" section.
+on:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push:
+    name: Build & push Docker images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        service: [backend, frontend, booking-service]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Compute lowercase image name
+        id: image
+        run: |
+          echo "name=${REGISTRY}/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')-${{ matrix.service }}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.service }}
+          push: true
+          tags: |
+            ${{ steps.image.outputs.name }}:latest
+            ${{ steps.image.outputs.name }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Trigger hosting deploy hook
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    # Only runs once you've added these repo secrets (Settings -> Secrets and
+    # variables -> Actions). Until then this job is a harmless no-op.
+    steps:
+      - name: Deploy backend (Render)
+        if: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK != '' }}
+        run: curl -fsS -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}"
+
+      - name: Deploy frontend (Render)
+        if: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK != '' }}
+        run: curl -fsS -X POST "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}"
+
+      - name: No deploy hooks configured
+        if: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK == '' && secrets.RENDER_FRONTEND_DEPLOY_HOOK == '' }}
+        run: echo "Images were pushed to GHCR, but no deploy hook secrets are set yet. See README.md."
+
+  update-gitops-manifests:
+    name: Update GitOps manifests (Kubernetes/ArgoCD image tags)
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up kustomize
+        uses: imranismail/setup-kustomize@v2
+
+      - name: Compute lowercase image base
+        id: image
+        run: |
+          echo "base=${REGISTRY}/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Point k8s/kustomization.yaml at this commit's images
+        working-directory: k8s
+        run: |
+          kustomize edit set image temple-backend=${{ steps.image.outputs.base }}-backend:${{ github.sha }}
+          kustomize edit set image temple-booking-service=${{ steps.image.outputs.base }}-booking-service:${{ github.sha }}
+          kustomize edit set image temple-frontend=${{ steps.image.outputs.base }}-frontend:${{ github.sha }}
+
+      # This is what actually triggers a new rollout: ArgoCD (installed via
+      # terraform/) watches k8s/ and auto-syncs whenever it changes here.
+      # "[skip ci]" stops this commit from re-triggering CI/CD on itself.
+      - name: Commit and push if the image tags changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add k8s/kustomization.yaml
+          if git diff --cached --quiet; then
+            echo "No image tag changes to commit."
+          else
+            git commit -m "chore(gitops): deploy ${{ github.sha }} [skip ci]"
+            git push
+          fi

@@ -1,0 +1,27 @@
+# Same shape as backend/networkpolicy.yaml - frontend + Prometheus only.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: booking-service
+  namespace: temple
+spec:
+  podSelector:
+    matchLabels:
+      app: booking-service
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: frontend
+      ports:
+        - protocol: TCP
+          port: 8000
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 8000

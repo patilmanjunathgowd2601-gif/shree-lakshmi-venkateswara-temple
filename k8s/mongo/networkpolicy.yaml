@@ -1,0 +1,24 @@
+# Only the two application services may reach MongoDB - not the frontend,
+# not anything outside the namespace.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mongo
+  namespace: temple
+spec:
+  podSelector:
+    matchLabels:
+      app: mongo
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: backend
+        - podSelector:
+            matchLabels:
+              app: booking-service
+      ports:
+        - protocol: TCP
+          port: 27017

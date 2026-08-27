@@ -1,0 +1,24 @@
+# Tells the Prometheus installed by terraform/ (kube-prometheus-stack) to
+# scrape this service's /metrics endpoint. Requires the Prometheus Operator
+# CRDs, which that Helm chart installs.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: backend
+  namespace: temple
+  labels:
+    # Must match the label kube-prometheus-stack's Prometheus CR uses to find
+    # ServiceMonitors - by default that's `release: <helm release name>`.
+    # terraform/main.tf installs the chart under the release name "prometheus".
+    release: prometheus
+spec:
+  namespaceSelector:
+    matchNames:
+      - temple
+  selector:
+    matchLabels:
+      app: backend
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

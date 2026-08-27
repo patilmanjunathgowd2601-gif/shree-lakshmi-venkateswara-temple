@@ -1,0 +1,82 @@
+# A single-replica Deployment is fine for a learning cluster. For a real
+# production database, use a managed service (e.g. MongoDB Atlas) instead -
+# see the README's deployment section, which does exactly that for the
+# actual live site.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo
+  namespace: temple
+  labels:
+    app: mongo
+  annotations:
+    # Checkov's Kubernetes scanner only honors skips declared as resource
+    # annotations (not inline "# checkov:skip=" YAML comments, which are a
+    # Terraform-only convention) - see the README's DevSecOps section.
+    checkov.io/skip1: >-
+      CKV_K8S_22=mongod writes beyond /data/db (e.g. its Unix socket under
+      /tmp, mounted as its own emptyDir below), so a read-only root
+      filesystem isn't workable here the way it is for the other three
+      services.
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # avoid two pods fighting over the same ReadWriteOnce volume
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      serviceAccountName: mongo
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        # The official mongo image's built-in "mongodb" user has historically
+        # been UID/GID 999 - verify with `docker run --rm mongo:7 id mongodb`
+        # if the pod fails to start, and adjust here if your image differs.
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mongo
+          image: mongo:7
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - name: mongo-data
+              mountPath: /data/db
+            - name: tmp
+              mountPath: /tmp
+          readinessProbe:
+            exec:
+              command: ["mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: mongo-data
+          persistentVolumeClaim:
+            claimName: mongo-data
+        - name: tmp
+          emptyDir: {}
