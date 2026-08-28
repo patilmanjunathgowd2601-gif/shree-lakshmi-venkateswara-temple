@@ -37,10 +37,10 @@ resources:
 images:
 - name: temple-backend
   newName: ghcr.io/patilmanjunathgowd2601-gif/shree-lakshmi-venkateswara-temple-backend
-  newTag: 6b55cd4392144262d22a025ea87b04f3f499045e
+  newTag: c62b76c247c138d3bd82f5b73253f9a1380eff5a
 - name: temple-booking-service
   newName: ghcr.io/patilmanjunathgowd2601-gif/shree-lakshmi-venkateswara-temple-booking-service
-  newTag: 6b55cd4392144262d22a025ea87b04f3f499045e
+  newTag: c62b76c247c138d3bd82f5b73253f9a1380eff5a
 - name: temple-frontend
   newName: ghcr.io/patilmanjunathgowd2601-gif/shree-lakshmi-venkateswara-temple-frontend
-  newTag: 6b55cd4392144262d22a025ea87b04f3f499045e
+  newTag: c62b76c247c138d3bd82f5b73253f9a1380eff5a
