@@ -1,7 +1,7 @@
 # --- Frontend Dockerfile: multi-stage build, served by nginx ---
 
 # Stage 1: build the static Vite/React bundle
-FROM node:20-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
