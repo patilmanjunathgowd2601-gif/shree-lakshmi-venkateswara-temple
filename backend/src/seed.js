@@ -4,24 +4,14 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 const connectDB = require('./config/db');
-const Admin = require('./models/Admin');
+const ensureAdminSeeded = require('./bootstrapAdmin');
 const Event = require('./models/Event');
 const GalleryImage = require('./models/GalleryImage');
 
 async function seed() {
   await connectDB();
 
-  const adminEmail = (process.env.ADMIN_EMAIL || 'admin@srilakshmivenkateswara.org').toLowerCase();
-  const adminPassword = process.env.ADMIN_PASSWORD || 'change-me-immediately';
-
-  const existingAdmin = await Admin.findOne({ email: adminEmail });
-  if (!existingAdmin) {
-    const passwordHash = await Admin.hashPassword(adminPassword);
-    await Admin.create({ name: 'Temple Admin', email: adminEmail, passwordHash });
-    console.log(`Created admin account: ${adminEmail}`);
-  } else {
-    console.log(`Admin account already exists: ${adminEmail}`);
-  }
+  await ensureAdminSeeded();
 
   const eventCount = await Event.countDocuments();
   if (eventCount === 0) {
