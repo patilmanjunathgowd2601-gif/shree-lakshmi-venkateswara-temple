@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useUserAuth } from '../context/UserAuthContext';
 
 const links = [
   { to: '/', label: 'Home' },
@@ -13,9 +14,38 @@ const links = [
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const { user, logout, isAuthenticated } = useUserAuth();
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    logout();
+    setOpen(false);
+    navigate('/');
+  }
 
   return (
     <header className="navbar">
+      <div className="navbar-top">
+        <div className="navbar-top-inner">
+          <span>Sri Lakshmi Venkateswara Temple Trust</span>
+          {isAuthenticated ? (
+            <span className="navbar-top-account">
+              Welcome, {user.name}
+              {' · '}
+              <button type="button" className="link-button" onClick={handleLogout}>
+                Log Out
+              </button>
+            </span>
+          ) : (
+            <span className="navbar-top-account">
+              <NavLink to="/login">Devotee Login</NavLink>
+              {' · '}
+              <NavLink to="/register">Register</NavLink>
+            </span>
+          )}
+        </div>
+      </div>
+
       <div className="navbar-inner">
         <NavLink to="/" className="brand" onClick={() => setOpen(false)}>
           <span className="brand-om">ॐ</span>

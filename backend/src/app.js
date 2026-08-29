@@ -5,9 +5,11 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 
 const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/users');
 const eventRoutes = require('./routes/events');
 const galleryRoutes = require('./routes/gallery');
 const donationRoutes = require('./routes/donations');
+const noticeRoutes = require('./routes/notices');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 const { register, metricsMiddleware } = require('./metrics');
 
@@ -51,9 +53,11 @@ function createApp() {
   });
 
   app.use('/api/auth', authRoutes);
+  app.use('/api/users', userRoutes);
   app.use('/api/events', eventRoutes);
   app.use('/api/gallery', galleryRoutes);
   app.use('/api/donations', donationRoutes);
+  app.use('/api/notices', noticeRoutes);
 
   app.use(notFound);
   app.use(errorHandler);

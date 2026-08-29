@@ -3,7 +3,7 @@ import api from '../api';
 import bookingApi from '../bookingApi';
 import { useAuth } from '../context/AuthContext';
 
-const TABS = ['Events', 'Gallery', 'Donations', 'Bookings'];
+const TABS = ['Notices', 'Events', 'Gallery', 'Donations', 'Bookings'];
 
 export default function AdminDashboard() {
   const { admin, logout } = useAuth();
@@ -33,10 +33,99 @@ export default function AdminDashboard() {
         ))}
       </div>
 
+      {tab === 'Notices' && <NoticesAdmin />}
       {tab === 'Events' && <EventsAdmin />}
       {tab === 'Gallery' && <GalleryAdmin />}
       {tab === 'Donations' && <DonationsAdmin />}
       {tab === 'Bookings' && <BookingsAdmin />}
+    </div>
+  );
+}
+
+function NoticesAdmin() {
+  const [notices, setNotices] = useState([]);
+  const [form, setForm] = useState({ title: '', body: '', priority: 'normal' });
+  const [error, setError] = useState(null);
+
+  function load() {
+    api.get('/notices').then(({ data }) => setNotices(data));
+  }
+
+  useEffect(load, []);
+
+  async function handleCreate(e) {
+    e.preventDefault();
+    setError(null);
+    try {
+      await api.post('/notices', form);
+      setForm({ title: '', body: '', priority: 'normal' });
+      load();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Could not post notice.');
+    }
+  }
+
+  async function handleDelete(id) {
+    await api.delete(`/notices/${id}`);
+    load();
+  }
+
+  return (
+    <div>
+      <form className="admin-form" onSubmit={handleCreate}>
+        <h3>Post Notice</h3>
+        <input
+          placeholder="Title"
+          value={form.title}
+          onChange={(e) => setForm({ ...form, title: e.target.value })}
+          required
+        />
+        <textarea
+          placeholder="Details (optional)"
+          value={form.body}
+          onChange={(e) => setForm({ ...form, body: e.target.value })}
+        />
+        <select
+          value={form.priority}
+          onChange={(e) => setForm({ ...form, priority: e.target.value })}
+        >
+          <option value="normal">Normal</option>
+          <option value="important">Important</option>
+        </select>
+        <button type="submit" className="btn btn-primary">
+          Post Notice
+        </button>
+        {error && <p className="error-text">{error}</p>}
+      </form>
+
+      <table className="admin-table">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Priority</th>
+            <th>Published</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {notices.map((n) => (
+            <tr key={n._id}>
+              <td>{n.title}</td>
+              <td>
+                <span className={`badge ${n.priority === 'important' ? 'badge-created' : ''}`}>
+                  {n.priority}
+                </span>
+              </td>
+              <td>{new Date(n.publishedAt).toLocaleDateString()}</td>
+              <td>
+                <button className="btn btn-outline btn-sm" onClick={() => handleDelete(n._id)}>
+                  Delete
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

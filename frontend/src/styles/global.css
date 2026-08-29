@@ -38,6 +38,45 @@ body {
   position: sticky;
   top: 0;
   z-index: 10;
+  border-bottom: 3px solid var(--gold);
+}
+
+/* Slim utility bar above the main nav - the "official portal" touch: trust
+   line + quick auth links, like most temple-board/government sites carry. */
+.navbar-top {
+  background: var(--maroon-dark);
+  font-size: 0.8rem;
+}
+
+.navbar-top-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0.35rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  color: #e8d9b8;
+}
+
+.navbar-top-account a,
+.navbar-top-account .link-button {
+  color: var(--gold);
+  text-decoration: none;
+}
+
+.navbar-top-account a:hover,
+.navbar-top-account .link-button:hover {
+  text-decoration: underline;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
 }
 
 .navbar-inner {
@@ -192,6 +231,67 @@ body {
   max-width: 1100px;
   margin-left: auto;
   margin-right: auto;
+}
+
+.section > h2 {
+  display: inline-block;
+  border-bottom: 3px solid var(--gold);
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.25rem;
+}
+
+/* Notice board */
+.notice-board {
+  background: #fffaf0;
+  border: 1px solid #e8d9b8;
+  border-left: 4px solid var(--maroon);
+  border-radius: var(--radius);
+  padding: 1.5rem 1.75rem;
+  margin: 2rem auto 0;
+}
+
+.notice-list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.notice-item {
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px dashed #e0d3ae;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.notice-item:last-child {
+  border-bottom: none;
+}
+
+.notice-item.notice-important {
+  background: #fff3cd;
+  border-radius: 6px;
+  border-bottom-style: solid;
+}
+
+.notice-date {
+  font-size: 0.8rem;
+  color: var(--muted);
+  min-width: 6.5rem;
+}
+
+.notice-title {
+  font-weight: bold;
+}
+
+.notice-body {
+  flex-basis: 100%;
+  margin: 0.25rem 0 0;
+  color: var(--muted);
 }
 
 .card-grid {

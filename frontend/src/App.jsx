@@ -12,6 +12,8 @@ import BookPriest from './pages/BookPriest';
 import Contact from './pages/Contact';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
+import Register from './pages/Register';
+import Login from './pages/Login';
 import NotFound from './pages/NotFound';
 
 export default function App() {
@@ -27,6 +29,8 @@ export default function App() {
           <Route path="/donate" element={<Donate />} />
           <Route path="/book-priest" element={<BookPriest />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route
             path="/admin"

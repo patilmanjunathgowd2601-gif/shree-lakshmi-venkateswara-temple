@@ -1,4 +1,36 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../api';
+
+function NoticeBoard() {
+  const [notices, setNotices] = useState([]);
+
+  useEffect(() => {
+    api
+      .get('/notices')
+      .then(({ data }) => setNotices(data))
+      .catch(() => setNotices([]));
+  }, []);
+
+  if (notices.length === 0) return null;
+
+  return (
+    <section className="section notice-board">
+      <h2>Notices &amp; Announcements</h2>
+      <ul className="notice-list">
+        {notices.map((notice) => (
+          <li key={notice._id} className={`notice-item ${notice.priority === 'important' ? 'notice-important' : ''}`}>
+            <span className="notice-date">
+              {new Date(notice.publishedAt).toLocaleDateString()}
+            </span>
+            <span className="notice-title">{notice.title}</span>
+            {notice.body && <p className="notice-body">{notice.body}</p>}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
 
 export default function Home() {
   return (
@@ -18,6 +50,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <NoticeBoard />
 
       <section className="section">
         <h2>Temple Timings</h2>

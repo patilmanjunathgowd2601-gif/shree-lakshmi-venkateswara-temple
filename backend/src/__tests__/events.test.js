@@ -1,4 +1,5 @@
 const request = require('supertest');
+const jwt = require('jsonwebtoken');
 
 jest.mock('../models/Event');
 const Event = require('../models/Event');
@@ -45,5 +46,17 @@ describe('POST /api/events', () => {
       .send({ title: 'Test Event', date: new Date().toISOString() });
 
     expect(res.status).toBe(401);
+  });
+
+  it('rejects a validly-signed devotee token - devotees are not admins', async () => {
+    const devoteeToken = jwt.sign({ id: 'user1', role: 'devotee' }, process.env.JWT_SECRET);
+
+    const res = await request(app)
+      .post('/api/events')
+      .set('Authorization', `Bearer ${devoteeToken}`)
+      .send({ title: 'Test Event', date: new Date().toISOString() });
+
+    expect(res.status).toBe(403);
+    expect(Event.create).not.toHaveBeenCalled();
   });
 });
