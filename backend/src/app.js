@@ -14,6 +14,12 @@ const { register, metricsMiddleware } = require('./metrics');
 function createApp() {
   const app = express();
 
+  // Render (and most reverse proxies/ingress controllers) sit in front of
+  // this app and set X-Forwarded-For - trust the first proxy hop so
+  // express-rate-limit can correctly identify real client IPs instead of
+  // throwing ERR_ERL_UNEXPECTED_X_FORWARDED_FOR.
+  app.set('trust proxy', 1);
+
   app.use(helmet());
   app.use(express.json());
   app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
