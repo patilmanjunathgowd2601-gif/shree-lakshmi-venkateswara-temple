@@ -1,5 +1,5 @@
 # --- Booking service Dockerfile: Python + FastAPI ---
-FROM python:3.12-slim AS base
+FROM python:3.14-slim AS base
 WORKDIR /app
 
 # Fixed UID/GID (1000) so k8s/booking-service/deployment.yaml's
