@@ -88,7 +88,7 @@ jobs:
           ref: main
 
       - name: Set up kustomize
-        uses: imranismail/setup-kustomize@v2
+        uses: imranismail/setup-kustomize@v3
 
       - name: Compute lowercase image base
         id: image
